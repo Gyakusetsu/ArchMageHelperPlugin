@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using Skua.Core.Interfaces;
+using System.Timers;
+using System.Threading;
 
 namespace RimuruPlugin
 {
     public class ArchMageHelperPlugin : ISkuaPlugin
     {
 
-        public static IScriptInterface Bot => IScriptInterface.Instance;
+        public IScriptInterface Bot => IScriptInterface.Instance;
 
         public string Name => "ArchMage Helper Plugin";
 
@@ -26,42 +27,54 @@ namespace RimuruPlugin
 
         private AscensionMode SelectedAscensionMode = AscensionMode.Corporeal;
 
-        private Thread? HelperThread { get; set; } = null;
+        private const string CORPOREAL_AURA_NAME = "Corporeal Ascension";
+        private const string ASTRAL_AURA_NAME = "Astral Ascension";
 
-    private void ArcaneFluxListener()
+        private System.Timers.Timer? MainHelperTimer;
+
+        private void ArcaneFluxListener(Object source, ElapsedEventArgs e)
         {
-            while (true)
-            {
-                if (Bot.Player.CurrentClass?.Name == "ArchMage"
-                    && Bot.Player.InCombat
+            if (Bot.Player.CurrentClass?.Name == "ArchMage"
                     && Bot.Self.HasActiveAura("Arcane Flux"))
+            {
+                switch (SelectedAscensionMode)
                 {
-                    switch (SelectedAscensionMode)
-                    {
-                        case AscensionMode.Corporeal:
-                            if (!Bot.Self.HasActiveAura("Corporeal Ascension"))
-                            {
-                                Logger("Activating Corporeal Ascension");
-                                Bot.Skills.UseSkill(4);
-                            }
-                            break;
-                        case AscensionMode.Astral:
-                            if (!Bot.Self.HasActiveAura("Astral Ascension"))
-                            {
-                                Logger("Activating Astral Ascension");
-                                Bot.Skills.UseSkill(4);
-                            }
-                            break;
-                    }
+                    case AscensionMode.Corporeal:
+                        if (!Bot.Self.HasActiveAura(CORPOREAL_AURA_NAME))
+                        {
+                            Bot.Skills.UseSkill(4);
+                        }
+                        break;
+                    case AscensionMode.Astral:
+                        if (!Bot.Self.HasActiveAura(ASTRAL_AURA_NAME))
+                        {
+                            Bot.Skills.UseSkill(4);
+                        }
+                        break;
                 }
-                Thread.Sleep(500);
+            }
+        }
+
+        private void DamageBoostListener(Object source, ElapsedEventArgs e)
+        {
+            if (Bot.Player.CurrentClass?.Name == "ArchMage"
+                && !Bot.Self.HasActiveAura("Arcane Flux") && !Bot.Self.HasActiveAura("Arcane Sigil")
+                && (Bot.Self.HasActiveAura(CORPOREAL_AURA_NAME) || Bot.Self.HasActiveAura(ASTRAL_AURA_NAME)))
+            {
+                /*
+                    * 30% Damage boost
+                */
+                Bot.Skills.UseSkill(4);
             }
         }
 
         public void Load(IServiceProvider provider, IPluginHelper helper)
         {
-            HelperThread = new Thread(new ThreadStart(ArcaneFluxListener)){ IsBackground = true };
-            HelperThread.Start();
+            MainHelperTimer = new System.Timers.Timer(100);
+            MainHelperTimer.Elapsed += ArcaneFluxListener;
+            MainHelperTimer.Elapsed += DamageBoostListener;
+            MainHelperTimer.AutoReset = true;
+            MainHelperTimer.Enabled = true;
 
             Logger("ArchMage Helper Plugin Loaded");
 
@@ -79,7 +92,7 @@ namespace RimuruPlugin
 
         public void Unload()
         {
-            HelperThread.Abort();
+
             Logger("ArchMage Helper Plugin Unloaded");
         }
 
