@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Skua.Core">
+      <HintPath>..\..\..\..\OneDrive\Desktop\Repos\Skua\Skua.Core\bin\Debug\net6.0\Skua.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Skua.Core.Interfaces">
+      <HintPath>..\..\..\..\Downloads\Skua.Core.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="Skua.Core.Models">
+      <HintPath>..\..\..\..\OneDrive\Desktop\Repos\Skua\Skua.Core.Interfaces\bin\Debug\net6.0\Skua.Core.Models.dll</HintPath>
+    </Reference>
+    <Reference Include="Skua.Core.Utils">
+      <HintPath>..\..\..\..\OneDrive\Desktop\Repos\Skua\Skua.Core.Interfaces\bin\Debug\net6.0\Skua.Core.Utils.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
