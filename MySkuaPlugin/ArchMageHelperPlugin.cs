@@ -44,13 +44,13 @@ namespace RimuruPlugin
                         if (Bot.Player.Stats?.CriticalChance < 1.0f)
                          //   || !Bot.Self.HasActiveAura(CORPOREAL_AURA_NAME))
                         {
-                            Bot.Skills.UseSkill(4);
+                            ActivateArcaneSigil();
                         }
                         break;
                     case AscensionMode.Astral:
                         if (!Bot.Self.HasActiveAura(ASTRAL_AURA_NAME))
                         {
-                            Bot.Skills.UseSkill(4);
+                            ActivateArcaneSigil();
                         }
                         break;
                 }
@@ -61,6 +61,14 @@ namespace RimuruPlugin
         {
             if (Bot.Self.HasActiveAura(SelectedAuraName)
                 && !Bot.Self.HasActiveAura("Arcane Sigil"))
+            {
+                ActivateArcaneSigil();
+            }
+        }
+
+        private void ActivateArcaneSigil() {
+            float healthPercentage = (float)Bot.Player.Health / (float)Bot.Player.MaxHealth;
+            if (healthPercentage > 0.5f)
             {
                 Bot.Skills.UseSkill(4);
             }
