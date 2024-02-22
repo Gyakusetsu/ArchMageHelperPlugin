@@ -32,11 +32,11 @@ namespace RimuruPlugin
         private string SelectedAuraName = CORPOREAL_AURA_NAME;
 
         private System.Timers.Timer? MainHelperTimer;
+        private System.Timers.Timer? DamageBoostHelperTimer;
 
         private void ArcaneFluxListener(Object? source, ElapsedEventArgs e)
         {
-            if (Bot.Player.CurrentClass?.Name == "ArchMage"
-                    && Bot.Self.HasActiveAura("Arcane Flux"))
+            if (Bot.Self.HasActiveAura("Arcane Flux"))
             {
                 switch (SelectedAscensionMode)
                 {
@@ -45,7 +45,6 @@ namespace RimuruPlugin
                          //   || !Bot.Self.HasActiveAura(CORPOREAL_AURA_NAME))
                         {
                             Bot.Skills.UseSkill(4);
-                            Bot.Player.Stats?.CriticalChance.ToString();
                         }
                         break;
                     case AscensionMode.Astral:
@@ -60,15 +59,9 @@ namespace RimuruPlugin
 
         private void DamageBoostListener(Object? source, ElapsedEventArgs e)
         {
-            
-            if (!Bot.Self.Auras.Any(a => a.Name is not null 
-                && (a.Name.Equals("Arcane Flux", StringComparison.OrdinalIgnoreCase)
-                    || a.Name.Equals("Arcane Sigil", StringComparison.OrdinalIgnoreCase)))
-                && Bot.Self.HasActiveAura(SelectedAuraName))
+            if (Bot.Self.HasActiveAura(SelectedAuraName)
+                && !Bot.Self.HasActiveAura("Arcane Sigil"))
             {
-                /*
-                    * 30% Damage boost
-                */
                 Bot.Skills.UseSkill(4);
             }
         }
@@ -77,9 +70,13 @@ namespace RimuruPlugin
         {
             MainHelperTimer = new System.Timers.Timer(100);
             MainHelperTimer.Elapsed += ArcaneFluxListener;
-            MainHelperTimer.Elapsed += DamageBoostListener;
             MainHelperTimer.AutoReset = true;
             MainHelperTimer.Enabled = true;
+
+            DamageBoostHelperTimer = new System.Timers.Timer(150);
+            DamageBoostHelperTimer.Elapsed += DamageBoostListener;
+            DamageBoostHelperTimer.AutoReset = true;
+            DamageBoostHelperTimer.Enabled = true;
 
             helper.AddMenuButton("Use Corporeal Ascension Mode", delegate
             {
@@ -103,6 +100,11 @@ namespace RimuruPlugin
             {
                 MainHelperTimer.Stop();
                 MainHelperTimer.Dispose();
+            }
+            if (DamageBoostHelperTimer is not null)
+            {
+                DamageBoostHelperTimer.Stop();
+                DamageBoostHelperTimer.Dispose();
             }
             Logger("ArchMage Helper Plugin Unloaded");
         }
