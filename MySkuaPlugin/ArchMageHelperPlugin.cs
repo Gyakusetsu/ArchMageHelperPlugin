@@ -29,10 +29,11 @@ namespace RimuruPlugin
 
         private const string CORPOREAL_AURA_NAME = "Corporeal Ascension";
         private const string ASTRAL_AURA_NAME = "Astral Ascension";
+        private string SelectedAuraName = CORPOREAL_AURA_NAME;
 
         private System.Timers.Timer? MainHelperTimer;
 
-        private void ArcaneFluxListener(Object source, ElapsedEventArgs e)
+        private void ArcaneFluxListener(Object? source, ElapsedEventArgs e)
         {
             if (Bot.Player.CurrentClass?.Name == "ArchMage"
                     && Bot.Self.HasActiveAura("Arcane Flux"))
@@ -40,9 +41,11 @@ namespace RimuruPlugin
                 switch (SelectedAscensionMode)
                 {
                     case AscensionMode.Corporeal:
-                        if (!Bot.Self.HasActiveAura(CORPOREAL_AURA_NAME))
+                        if (Bot.Player.Stats?.CriticalChance < 1.0f)
+                         //   || !Bot.Self.HasActiveAura(CORPOREAL_AURA_NAME))
                         {
                             Bot.Skills.UseSkill(4);
+                            Bot.Player.Stats?.CriticalChance.ToString();
                         }
                         break;
                     case AscensionMode.Astral:
@@ -55,11 +58,13 @@ namespace RimuruPlugin
             }
         }
 
-        private void DamageBoostListener(Object source, ElapsedEventArgs e)
+        private void DamageBoostListener(Object? source, ElapsedEventArgs e)
         {
-            if (Bot.Player.CurrentClass?.Name == "ArchMage"
-                && !Bot.Self.HasActiveAura("Arcane Flux") && !Bot.Self.HasActiveAura("Arcane Sigil")
-                && (Bot.Self.HasActiveAura(CORPOREAL_AURA_NAME) || Bot.Self.HasActiveAura(ASTRAL_AURA_NAME)))
+            
+            if (!Bot.Self.Auras.Any(a => a.Name is not null 
+                && (a.Name.Equals("Arcane Flux", StringComparison.OrdinalIgnoreCase)
+                    || a.Name.Equals("Arcane Sigil", StringComparison.OrdinalIgnoreCase)))
+                && Bot.Self.HasActiveAura(SelectedAuraName))
             {
                 /*
                     * 30% Damage boost
@@ -76,23 +81,29 @@ namespace RimuruPlugin
             MainHelperTimer.AutoReset = true;
             MainHelperTimer.Enabled = true;
 
-            Logger("ArchMage Helper Plugin Loaded");
-
             helper.AddMenuButton("Use Corporeal Ascension Mode", delegate
             {
                 SelectedAscensionMode = AscensionMode.Corporeal;
+                SelectedAuraName = CORPOREAL_AURA_NAME;
                 Logger("Switched to Corporeal Ascension");
             });
             helper.AddMenuButton("Use Astral Ascension Mode", delegate
             {
                 SelectedAscensionMode = AscensionMode.Astral;
+                SelectedAuraName = ASTRAL_AURA_NAME;
                 Logger("Switched to Astral Ascension");
             });
+
+            Logger("ArchMage Helper Plugin Loaded");
         }
 
         public void Unload()
         {
-
+            if (MainHelperTimer is not null)
+            {
+                MainHelperTimer.Stop();
+                MainHelperTimer.Dispose();
+            }
             Logger("ArchMage Helper Plugin Unloaded");
         }
 
