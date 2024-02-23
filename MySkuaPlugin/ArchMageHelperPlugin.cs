@@ -29,20 +29,25 @@ namespace RimuruPlugin
 
         private const string CORPOREAL_AURA_NAME = "Corporeal Ascension";
         private const string ASTRAL_AURA_NAME = "Astral Ascension";
-        private string SelectedAuraName = CORPOREAL_AURA_NAME;
+        // private string SelectedAuraName = CORPOREAL_AURA_NAME;
 
         private System.Timers.Timer? MainHelperTimer;
         private System.Timers.Timer? DamageBoostHelperTimer;
+        private System.Timers.Timer? UnloadTimer;
 
-        private void ArcaneFluxListener(Object? source, ElapsedEventArgs e)
+        private bool IsArchMageEquiped()
         {
-            if (Bot.Self.HasActiveAura("Arcane Flux"))
-            {
+            return Bot.Player.CurrentClass is not null && Bot.Player.CurrentClass.Name.Equals("ArchMage");
+        }
+
+        private void ArcaneSigilListener(Object? source, ElapsedEventArgs e)
+        {
+            if (IsArchMageEquiped()) {
                 switch (SelectedAscensionMode)
                 {
                     case AscensionMode.Corporeal:
-                        if (Bot.Player.Stats?.CriticalChance < 1.0f)
-                         //   || !Bot.Self.HasActiveAura(CORPOREAL_AURA_NAME))
+                        if (Bot.Player.Stats?.CriticalChance < 1.0f && Bot.Self.HasActiveAura("Arcane Flux"))
+                            //   || !Bot.Self.HasActiveAura(CORPOREAL_AURA_NAME))
                         {
                             ActivateArcaneSigil();
                         }
@@ -59,43 +64,59 @@ namespace RimuruPlugin
 
         private void DamageBoostListener(Object? source, ElapsedEventArgs e)
         {
-            if (Bot.Self.HasActiveAura(SelectedAuraName)
-                && !Bot.Self.HasActiveAura("Arcane Sigil"))
+            if (IsArchMageEquiped() && Bot.Player.InCombat
+                && (Bot.Flash.GetGameObject("world.myAvatar.dataLeaf.sta.$cao", 1.0f) < 1.3f // Damage boost
+                    || !Bot.Self.HasActiveAura("Arcane Sigil")))
             {
                 ActivateArcaneSigil();
             }
         }
 
-        private void ActivateArcaneSigil() {
-            float healthPercentage = (float)Bot.Player.Health / (float)Bot.Player.MaxHealth;
-            if (healthPercentage > 0.5f)
-            {
-                Bot.Skills.UseSkill(4);
+        private void UnloadPluginListener(Object? source, ElapsedEventArgs e)
+        {
+            if (Bot.Player.LoggedIn && Bot.Flash.IsWorldLoaded && Bot.Map.Loaded && Bot.Player.Loaded) {
+                if (Bot.Bank.Contains("ArchMage") || Bot.Inventory.Contains("ArchMage")) {
+                    if (UnloadTimer is not null) {
+                        UnloadTimer.Stop();
+                        UnloadTimer.Dispose();
+                        Logger("ArchMage owned");
+                    }
+                } else {
+                    Logger("ArchMage not owned, Unloading ArchMage Helper Plugin", "UnloadPluginListener");
+                    Unload();
+                }
             }
+        }
+
+        private void ActivateArcaneSigil() {
+            Bot.Skills.UseSkill(4);
         }
 
         public void Load(IServiceProvider provider, IPluginHelper helper)
         {
-            MainHelperTimer = new System.Timers.Timer(100);
-            MainHelperTimer.Elapsed += ArcaneFluxListener;
+            MainHelperTimer = new System.Timers.Timer(250);
+            MainHelperTimer.Elapsed += ArcaneSigilListener;
             MainHelperTimer.AutoReset = true;
             MainHelperTimer.Enabled = true;
 
-            DamageBoostHelperTimer = new System.Timers.Timer(150);
+            DamageBoostHelperTimer = new System.Timers.Timer(250);
             DamageBoostHelperTimer.Elapsed += DamageBoostListener;
             DamageBoostHelperTimer.AutoReset = true;
             DamageBoostHelperTimer.Enabled = true;
 
+            UnloadTimer = new System.Timers.Timer(500);
+            UnloadTimer.Elapsed += UnloadPluginListener;
+            UnloadTimer.AutoReset = true;
+            UnloadTimer.Enabled = true;
+
             helper.AddMenuButton("Use Corporeal Ascension Mode", delegate
             {
                 SelectedAscensionMode = AscensionMode.Corporeal;
-                SelectedAuraName = CORPOREAL_AURA_NAME;
                 Logger("Switched to Corporeal Ascension");
             });
             helper.AddMenuButton("Use Astral Ascension Mode", delegate
             {
                 SelectedAscensionMode = AscensionMode.Astral;
-                SelectedAuraName = ASTRAL_AURA_NAME;
                 Logger("Switched to Astral Ascension");
             });
 
@@ -113,6 +134,11 @@ namespace RimuruPlugin
             {
                 DamageBoostHelperTimer.Stop();
                 DamageBoostHelperTimer.Dispose();
+            }
+            if (UnloadTimer is not null)
+            {
+                UnloadTimer.Stop();
+                UnloadTimer.Dispose();
             }
             Logger("ArchMage Helper Plugin Unloaded");
         }
