@@ -34,15 +34,24 @@ namespace RimuruPlugin
         private System.Timers.Timer? MainHelperTimer;
         private System.Timers.Timer? DamageBoostHelperTimer;
         private System.Timers.Timer? UnloadTimer;
+        private System.Timers.Timer? OptionLockTimer;
 
         private bool IsArchMageEquiped()
         {
             return Bot.Player.CurrentClass is not null && Bot.Player.CurrentClass.Name.Equals("ArchMage");
         }
 
+        private void OptionLockListener(Object? source, ElapsedEventArgs e)
+        {
+            if (IsArchMageEquiped()) {
+                Bot.Options.AttackWithoutTarget = true;
+            }
+        }
+
         private void ArcaneSigilListener(Object? source, ElapsedEventArgs e)
         {
             if (IsArchMageEquiped()) {
+
                 switch (SelectedAscensionMode)
                 {
                     case AscensionMode.Corporeal:
@@ -104,7 +113,12 @@ namespace RimuruPlugin
             DamageBoostHelperTimer.AutoReset = true;
             DamageBoostHelperTimer.Enabled = true;
 
-            UnloadTimer = new System.Timers.Timer(500);
+            OptionLockTimer = new System.Timers.Timer(1000);
+            OptionLockTimer.Elapsed += OptionLockListener;
+            OptionLockTimer.AutoReset = true;
+            OptionLockTimer.Enabled = true;
+
+            UnloadTimer = new System.Timers.Timer(1000);
             UnloadTimer.Elapsed += UnloadPluginListener;
             UnloadTimer.AutoReset = true;
             UnloadTimer.Enabled = true;
@@ -134,6 +148,11 @@ namespace RimuruPlugin
             {
                 DamageBoostHelperTimer.Stop();
                 DamageBoostHelperTimer.Dispose();
+            }
+            if (OptionLockTimer is not null)
+            {
+                OptionLockTimer.Stop();
+                OptionLockTimer.Dispose();
             }
             if (UnloadTimer is not null)
             {
