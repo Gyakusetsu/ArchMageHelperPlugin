@@ -3,6 +3,10 @@ using System.Runtime.CompilerServices;
 using Skua.Core.Interfaces;
 using System.Timers;
 using System.Threading;
+using System.Windows.Forms;
+using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Diagnostics;
 
 namespace RimuruPlugin
 {
@@ -35,6 +39,43 @@ namespace RimuruPlugin
         private System.Timers.Timer? DamageBoostHelperTimer;
         private System.Timers.Timer? UnloadTimer;
         private System.Timers.Timer? OptionLockTimer;
+        private System.Timers.Timer? SkillSpamTimer;
+
+        private IPluginHelper? BotHelper;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+        public static void PressKey(Keys key, bool up) {
+            const int KEYEVENTF_EXTENDEDKEY = 0x1;
+            const int KEYEVENTF_KEYUP = 0x2;
+            if (up) {
+                keybd_event((byte) key, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, (UIntPtr) 0);
+            }
+            else {
+                keybd_event((byte) key, 0x45, KEYEVENTF_EXTENDEDKEY, (UIntPtr) 0);
+            }
+        }
+
+        /// <summary>Returns true if the current application has focus, false otherwise</summary>
+        public static bool ApplicationIsActivated()
+        {
+            var activatedHandle = GetForegroundWindow();
+            if (activatedHandle == IntPtr.Zero) {
+                return false;       // No window is currently activated
+            }
+
+            var procId = Process.GetCurrentProcess().Id;
+            int activeProcId;
+            GetWindowThreadProcessId(activatedHandle, out activeProcId);
+
+            return activeProcId == procId;
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern int GetWindowThreadProcessId(IntPtr handle, out int processId);
 
         private bool IsArchMageEquiped()
         {
@@ -45,6 +86,33 @@ namespace RimuruPlugin
         {
             if (IsArchMageEquiped()) {
                 Bot.Options.AttackWithoutTarget = true;
+            }
+        }
+
+        private void SkillSpamListener(Object? source, ElapsedEventArgs e)
+        {
+
+            if (ApplicationIsActivated() && IsArchMageEquiped() && (Bot.Auto.IsRunning || Bot.Player.InCombat || Bot.Manager.ScriptRunning)) {
+                PressKey(Keys.D1, false);
+                PressKey(Keys.D1, true);
+                if (Bot.Player.Mana < 30)
+                {
+                    // Bot.Skills.UseSkill(3);
+                    PressKey(Keys.D3, false);
+                    PressKey(Keys.D3, true);
+                } 
+                
+                if (Bot.Player.Mana > 10) {
+                    // Bot.Skills.UseSkill(1);
+                    PressKey(Keys.D2, false);
+                    PressKey(Keys.D2, true);
+                }
+
+                if (Bot.Player.Mana > 20) {
+                    // Bot.Skills.UseSkill(3);
+                    PressKey(Keys.D4, false);
+                    PressKey(Keys.D4, true);
+                }
             }
         }
 
@@ -103,6 +171,8 @@ namespace RimuruPlugin
 
         public void Load(IServiceProvider provider, IPluginHelper helper)
         {
+            BotHelper = helper;
+
             MainHelperTimer = new System.Timers.Timer(250);
             MainHelperTimer.Elapsed += ArcaneSigilListener;
             MainHelperTimer.AutoReset = true;
@@ -123,6 +193,11 @@ namespace RimuruPlugin
             UnloadTimer.AutoReset = true;
             UnloadTimer.Enabled = true;
 
+            SkillSpamTimer = new System.Timers.Timer(250);
+            SkillSpamTimer.Elapsed += SkillSpamListener;
+            SkillSpamTimer.AutoReset = true;
+            SkillSpamTimer.Enabled = false;
+
             helper.AddMenuButton("Use Corporeal Ascension Mode", delegate
             {
                 SelectedAscensionMode = AscensionMode.Corporeal;
@@ -133,12 +208,22 @@ namespace RimuruPlugin
                 SelectedAscensionMode = AscensionMode.Astral;
                 Logger("Switched to Astral Ascension");
             });
+            helper.AddMenuButton("SkillSpam", delegate
+            {
+                SkillSpamTimer.Enabled = !SkillSpamTimer.Enabled;
+                Logger($"Toggled SkillSpam: {SkillSpamTimer.Enabled.ToString()}");
+            });
 
             Logger("ArchMage Helper Plugin Loaded");
         }
 
         public void Unload()
         {
+            if (BotHelper is not null) {
+                BotHelper.RemoveMenuButton("Use Corporeal Ascension Mode");
+                BotHelper.RemoveMenuButton("Use Astral Ascension Mode");
+                BotHelper.RemoveMenuButton("SkillSpam");
+            }
             if (MainHelperTimer is not null)
             {
                 MainHelperTimer.Stop();
@@ -158,6 +243,11 @@ namespace RimuruPlugin
             {
                 UnloadTimer.Stop();
                 UnloadTimer.Dispose();
+            }
+            if (SkillSpamTimer is not null)
+            {
+                SkillSpamTimer.Stop();
+                SkillSpamTimer.Dispose();
             }
             Logger("ArchMage Helper Plugin Unloaded");
         }

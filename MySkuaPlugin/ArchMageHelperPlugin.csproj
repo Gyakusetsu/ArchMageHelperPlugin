@@ -20,6 +20,9 @@
     <Reference Include="Skua.Core.Utils">
       <HintPath>..\..\..\..\OneDrive\Desktop\Repos\Skua\Skua.Core.Interfaces\bin\Debug\net6.0\Skua.Core.Utils.dll</HintPath>
     </Reference>
+    <Reference Include="System.Windows.Forms">
+      <HintPath>..\..\..\..\..\..\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
