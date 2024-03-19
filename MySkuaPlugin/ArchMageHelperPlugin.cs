@@ -91,27 +91,26 @@ namespace RimuruPlugin
 
         private void SkillSpamListener(Object? source, ElapsedEventArgs e)
         {
-
-            if (ApplicationIsActivated() && IsArchMageEquiped() && (Bot.Auto.IsRunning || Bot.Player.InCombat || Bot.Manager.ScriptRunning)) {
-                PressKey(Keys.D1, false);
-                PressKey(Keys.D1, true);
+            if (IsArchMageEquiped() && Bot.Target.Auras.Count > 0) {
+                // PressKey(Keys.D1, false);
+                // PressKey(Keys.D1, true);
                 if (Bot.Player.Mana < 30)
                 {
-                    // Bot.Skills.UseSkill(3);
-                    PressKey(Keys.D3, false);
-                    PressKey(Keys.D3, true);
+                    Bot.Skills.UseSkill(2);
+                    // PressKey(Keys.D3, false);
+                    // PressKey(Keys.D3, true);
                 } 
                 
                 if (Bot.Player.Mana > 10) {
-                    // Bot.Skills.UseSkill(1);
-                    PressKey(Keys.D2, false);
-                    PressKey(Keys.D2, true);
+                    Bot.Skills.UseSkill(1);
+                    // PressKey(Keys.D2, false);
+                    // PressKey(Keys.D2, true);
                 }
 
                 if (Bot.Player.Mana > 20) {
-                    // Bot.Skills.UseSkill(3);
-                    PressKey(Keys.D4, false);
-                    PressKey(Keys.D4, true);
+                    Bot.Skills.UseSkill(3);
+                    // PressKey(Keys.D4, false);
+                    // PressKey(Keys.D4, true);
                 }
             }
         }
@@ -196,22 +195,26 @@ namespace RimuruPlugin
             SkillSpamTimer = new System.Timers.Timer(250);
             SkillSpamTimer.Elapsed += SkillSpamListener;
             SkillSpamTimer.AutoReset = true;
-            SkillSpamTimer.Enabled = false;
+            SkillSpamTimer.Enabled = true;
 
-            helper.AddMenuButton("Use Corporeal Ascension Mode", delegate
+            helper.AddMenuButton("Set DamageBoost Helper", delegate
             {
-                SelectedAscensionMode = AscensionMode.Corporeal;
-                Logger("Switched to Corporeal Ascension");
+                DamageBoostHelperTimer.Enabled = !DamageBoostHelperTimer.Enabled;
+                Logger($"SetHelper: {DamageBoostHelperTimer.Enabled.ToString()}");
             });
-            helper.AddMenuButton("Use Astral Ascension Mode", delegate
+            helper.AddMenuButton("Switch Ascension Mode", delegate
             {
-                SelectedAscensionMode = AscensionMode.Astral;
-                Logger("Switched to Astral Ascension");
+                if (SelectedAscensionMode == AscensionMode.Corporeal) {
+                    SelectedAscensionMode = AscensionMode.Astral;
+                } else {
+                    SelectedAscensionMode = AscensionMode.Corporeal;
+                }
+                Logger($"Switched to {nameof(SelectedAscensionMode)} Ascension");
             });
             helper.AddMenuButton("SkillSpam", delegate
             {
                 SkillSpamTimer.Enabled = !SkillSpamTimer.Enabled;
-                Logger($"Toggled SkillSpam: {SkillSpamTimer.Enabled.ToString()}");
+                Logger($"SkillSpam: {SkillSpamTimer.Enabled.ToString()}");
             });
 
             Logger("ArchMage Helper Plugin Loaded");
@@ -220,8 +223,8 @@ namespace RimuruPlugin
         public void Unload()
         {
             if (BotHelper is not null) {
-                BotHelper.RemoveMenuButton("Use Corporeal Ascension Mode");
-                BotHelper.RemoveMenuButton("Use Astral Ascension Mode");
+                BotHelper.RemoveMenuButton("Set DamageBoost Helper");
+                BotHelper.RemoveMenuButton("Switch Ascension Mode");
                 BotHelper.RemoveMenuButton("SkillSpam");
             }
             if (MainHelperTimer is not null)
