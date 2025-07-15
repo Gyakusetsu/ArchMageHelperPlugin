@@ -180,7 +180,7 @@ namespace RimuruPlugin
             DamageBoostHelperTimer = new System.Timers.Timer(250);
             DamageBoostHelperTimer.Elapsed += DamageBoostListener;
             DamageBoostHelperTimer.AutoReset = true;
-            DamageBoostHelperTimer.Enabled = true;
+            DamageBoostHelperTimer.Enabled = false;
 
             OptionLockTimer = new System.Timers.Timer(1000);
             OptionLockTimer.Elapsed += OptionLockListener;
